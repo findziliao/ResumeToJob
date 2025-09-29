@@ -2,12 +2,14 @@ import { Form } from "components/ResumeForm/Form";
 import { BulletListTextarea } from "components/ResumeForm/Form/InputGroup";
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
-import { changeCustom, selectCustom } from "lib/redux/resumeManagerSlice";
+import { changeCustom, selectCustom, selectCustomById } from "lib/redux/resumeManagerSlice";
 import { updateFormHeadingIfNotCustomized } from "lib/redux/settingsSlice";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 
-export const CustomForm = () => {
-  const custom = useAppSelector(selectCustom);
+export const CustomForm = ({ resumeId }: { resumeId?: string }) => {
+  const custom = useAppSelector((state) =>
+    resumeId ? selectCustomById(state as any, resumeId) : selectCustom(state as any),
+  );
   const dispatch = useAppDispatch();
   const { language } = useLanguageRedux();
   const { descriptions } = custom;
@@ -35,7 +37,7 @@ export const CustomForm = () => {
     [language],
   );
   const handleCustomChange = (field: "descriptions", value: string[]) => {
-    dispatch(changeCustom({ field, value }));
+    dispatch(changeCustom({ resumeId, field, value }));
   };
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export const CustomForm = () => {
   }, [dispatch, language, form, translate]);
 
   return (
-    <Form form={form}>
+    <Form form={form} resumeId={resumeId}>
       <div className="col-span-full grid grid-cols-6 gap-3">
         {" "}
         <div className="col-span-full">

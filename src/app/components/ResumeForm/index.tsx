@@ -19,7 +19,7 @@ import { FlexboxSpacer } from "components/FlexboxSpacer";
 import { cx } from "lib/cx";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 
-const formTypeToComponent: { [type in ShowForm]: () => JSX.Element } = {
+const formTypeToComponent: { [type in ShowForm]: React.FC<{ resumeId?: string }> } = {
   workExperiences: WorkExperiencesForm,
   educations: EducationsForm,
   projects: ProjectsForm,
@@ -27,7 +27,7 @@ const formTypeToComponent: { [type in ShowForm]: () => JSX.Element } = {
   custom: CustomForm,
 };
 
-export const ResumeForm = () => {
+export const ResumeForm = ({ resumeId }: { resumeId?: string }) => {
   // 初始化逻辑已移动到 providers.tsx 中的 StoreInitializer 组件
   // 这样确保无论用户访问哪个页面，都会正确初始化状态
 
@@ -85,10 +85,10 @@ export const ResumeForm = () => {
       <section className="flex max-w-2xl flex-col gap-8 p-[var(--resume-padding)]">
         <EditorInstructions />
         <ResumeManagerButton />
-        <ProfileForm />
+        <ProfileForm resumeId={resumeId} />
         {formsOrder.map((form) => {
           const Component = formTypeToComponent[form];
-          return <Component key={form} />;
+          return <Component key={form} resumeId={resumeId} />;
         })}
         <ThemeForm />
         <br />

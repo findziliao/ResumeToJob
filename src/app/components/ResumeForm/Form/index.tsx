@@ -55,10 +55,12 @@ export const Form = ({
   form,
   addButtonText,
   children,
+  resumeId,
 }: {
   form: ShowForm;
   addButtonText?: string;
   children: React.ReactNode;
+  resumeId?: string;
 }) => {
   const showForm = useAppSelector(selectShowByForm(form));
   const heading = useAppSelector(selectHeadingByForm(form));
@@ -120,7 +122,7 @@ export const Form = ({
           <button
             type="button"
             onClick={() => {
-              dispatch(addSectionInForm({ form }));
+              dispatch(addSectionInForm({ form, resumeId }));
             }}
             className="flex items-center rounded-md bg-white py-2 pl-3 pr-4 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
@@ -144,6 +146,7 @@ export const FormSection = ({
   showDelete,
   deleteButtonTooltipText,
   children,
+  resumeId,
 }: {
   form: ShowForm;
   idx: number;
@@ -152,13 +155,14 @@ export const FormSection = ({
   showDelete: boolean;
   deleteButtonTooltipText: string;
   children: React.ReactNode;
+  resumeId?: string;
 }) => {
   const dispatch = useAppDispatch();
   const handleDeleteClick = () => {
-    dispatch(deleteSectionInFormByIdx({ form, idx }));
+    dispatch(deleteSectionInFormByIdx({ form, idx, resumeId }));
   };
   const handleMoveClick = (direction: "up" | "down") => {
-    dispatch(moveSectionInForm({ form, direction, idx }));
+    dispatch(moveSectionInForm({ form, direction, idx, resumeId }));
   };
 
   return (

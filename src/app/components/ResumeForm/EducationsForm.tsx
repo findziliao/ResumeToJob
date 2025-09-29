@@ -9,13 +9,18 @@ import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
 import {
   changeEducations,
   selectEducations,
+  selectEducationsById,
 } from "lib/redux/resumeManagerSlice";
 import type { ResumeEducation } from "lib/redux/types";
 import { updateFormHeadingIfNotCustomized } from "lib/redux/settingsSlice";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 
-export const EducationsForm = () => {
-  const educations = useAppSelector(selectEducations);
+export const EducationsForm = ({ resumeId }: { resumeId?: string }) => {
+  const educations = useAppSelector((state) =>
+    resumeId
+      ? selectEducationsById(state as any, resumeId)
+      : selectEducations(state as any),
+  );
   const dispatch = useAppDispatch();
   const { language } = useLanguageRedux();
   const showDelete = educations.length > 1;
@@ -86,7 +91,7 @@ export const EducationsForm = () => {
               value,
             ]: CreateHandleChangeArgsWithDescriptions<ResumeEducation>
           ) => {
-            dispatch(changeEducations({ idx, field, value } as any));
+            dispatch(changeEducations({ resumeId, idx, field, value } as any));
           };
 
           const showMoveUp = idx !== 0;
@@ -101,6 +106,7 @@ export const EducationsForm = () => {
               showMoveDown={showMoveDown}
               showDelete={showDelete}
               deleteButtonTooltipText={translate("deleteEducation")}
+              resumeId={resumeId}
             >
               <Input
                 label={translate("school")}

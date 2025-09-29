@@ -9,13 +9,18 @@ import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
 import {
   changeWorkExperiences,
   selectWorkExperiences,
+  selectWorkExperiencesById,
 } from "lib/redux/resumeManagerSlice";
 import type { ResumeWorkExperience } from "lib/redux/types";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 import { updateFormHeadingIfNotCustomized } from "lib/redux/settingsSlice";
 
-export const WorkExperiencesForm = () => {
-  const workExperiences = useAppSelector(selectWorkExperiences);
+export const WorkExperiencesForm = ({ resumeId }: { resumeId?: string }) => {
+  const workExperiences = useAppSelector((state) =>
+    resumeId
+      ? selectWorkExperiencesById(state as any, resumeId)
+      : selectWorkExperiences(state as any),
+  );
   const dispatch = useAppDispatch();
   const { language } = useLanguageRedux();
 
@@ -77,7 +82,9 @@ export const WorkExperiencesForm = () => {
               value,
             ]: CreateHandleChangeArgsWithDescriptions<ResumeWorkExperience>
           ) => {
-            dispatch(changeWorkExperiences({ idx, field, value } as any));
+            dispatch(
+              changeWorkExperiences({ resumeId, idx, field, value } as any),
+            );
           };
           const showMoveUp = idx !== 0;
           const showMoveDown = idx !== workExperiences.length - 1;
@@ -91,6 +98,7 @@ export const WorkExperiencesForm = () => {
               showMoveDown={showMoveDown}
               showDelete={showDelete}
               deleteButtonTooltipText={translate("deleteWork")}
+              resumeId={resumeId}
             >
               {" "}
               <Input

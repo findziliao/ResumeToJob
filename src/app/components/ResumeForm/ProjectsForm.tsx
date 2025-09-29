@@ -6,13 +6,19 @@ import {
 import type { CreateHandleChangeArgsWithDescriptions } from "components/ResumeForm/types";
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
-import { selectProjects, changeProjects } from "lib/redux/resumeManagerSlice";
+import {
+  selectProjects,
+  changeProjects,
+  selectProjectsById,
+} from "lib/redux/resumeManagerSlice";
 import type { ResumeProject } from "lib/redux/types";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 import { updateFormHeadingIfNotCustomized } from "lib/redux/settingsSlice";
 
-export const ProjectsForm = () => {
-  const projects = useAppSelector(selectProjects);
+export const ProjectsForm = ({ resumeId }: { resumeId?: string }) => {
+  const projects = useAppSelector((state) =>
+    resumeId ? selectProjectsById(state as any, resumeId) : selectProjects(state as any),
+  );
   const dispatch = useAppDispatch();
   const { language } = useLanguageRedux();
   const showDelete = projects.length > 1;
@@ -69,7 +75,7 @@ export const ProjectsForm = () => {
             value,
           ]: CreateHandleChangeArgsWithDescriptions<ResumeProject>
         ) => {
-          dispatch(changeProjects({ idx, field, value } as any));
+          dispatch(changeProjects({ resumeId, idx, field, value } as any));
         };
         const showMoveUp = idx !== 0;
         const showMoveDown = idx !== projects.length - 1;
@@ -83,6 +89,7 @@ export const ProjectsForm = () => {
             showMoveDown={showMoveDown}
             showDelete={showDelete}
             deleteButtonTooltipText={translate("deleteProject")}
+            resumeId={resumeId}
           >
             <Input
               name="project"

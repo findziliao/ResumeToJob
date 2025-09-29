@@ -6,15 +6,17 @@ import {
 import { FeaturedSkillInput } from "components/ResumeForm/Form/FeaturedSkillInput";
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
-import { selectSkills, changeSkills } from "lib/redux/resumeManagerSlice";
+import { selectSkills, changeSkills, selectSkillsById } from "lib/redux/resumeManagerSlice";
 import {
   selectThemeColor,
   updateFormHeadingIfNotCustomized,
 } from "lib/redux/settingsSlice";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 
-export const SkillsForm = () => {
-  const skills = useAppSelector(selectSkills);
+export const SkillsForm = ({ resumeId }: { resumeId?: string }) => {
+  const skills = useAppSelector((state) =>
+    resumeId ? selectSkillsById(state as any, resumeId) : selectSkills(state as any),
+  );
   const dispatch = useAppDispatch();
   const { language } = useLanguageRedux();
   const { featuredSkills, descriptions } = skills;
@@ -55,14 +57,14 @@ export const SkillsForm = () => {
     [language],
   );
   const handleSkillsChange = (field: "descriptions", value: string[]) => {
-    dispatch(changeSkills({ field, value }));
+    dispatch(changeSkills({ resumeId, field, value }));
   };
   const handleFeaturedSkillsChange = (
     idx: number,
     skill: string,
     rating: number,
   ) => {
-    dispatch(changeSkills({ field: "featuredSkills", idx, skill, rating }));
+    dispatch(changeSkills({ resumeId, field: "featuredSkills", idx, skill, rating }));
   };
 
   // 更新表单标题（仅在用户未自定义时）
@@ -76,7 +78,7 @@ export const SkillsForm = () => {
   }, [dispatch, language, form, translate]);
 
   return (
-    <Form form={form}>
+    <Form form={form} resumeId={resumeId}>
       {" "}
       <div className="col-span-full grid grid-cols-6 gap-3">
         <div className="col-span-full">

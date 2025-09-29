@@ -20,85 +20,45 @@ export const TopNavBar = () => {
 
   const translate = (key: string) => {
     const translations: Record<string, Record<string, string>> = {
-      build: {
-        en: "Create Resume",
-        zh: "创建简历",
-      },
-      menu: {
-        en: "Menu",
-        zh: "菜单",
-      },
-      bugReport: {
-        en: "Bug Report",
-        zh: "反馈问题",
-      },
-      resetDefault: {
-        en: "Reset Default",
-        zh: "恢复默认",
-      },
-      bugReportTitle: {
-        en: "Bug Report",
-        zh: "反馈问题",
-      },
+      build: { en: "Create Resume", zh: "\u521B\u5EFA\u7B80\u5386" },
+      compare: { en: "Compare & Edit", zh: "\u5BF9\u7167\u7F16\u8F91" },
+      menu: { en: "Menu", zh: "\u83DC\u5355" },
+      bugReport: { en: "Bug Report", zh: "\u53CD\u9988\u95EE\u9898" },
+      resetDefault: { en: "Reset Default", zh: "\u6062\u590D\u9ED8\u8BA4" },
+      bugReportTitle: { en: "Bug Report", zh: "\u53CD\u9988\u95EE\u9898" },
       bugReportMessage: {
         en: "If you find bugs or things you think are not good, please report issues in GitHub Issues.\n\nClick OK to jump to the GitHub Issues page.",
-        zh: "如果发现bug或者你认为不好的地方，请在GitHub Issues中反馈问题。\n\n点击确定将跳转到GitHub Issues页面。",
+        zh: "\u5982\u679C\u53D1\u73B0 bug \u6216\u8005\u4F60\u8BA4\u4E3A\u4E0D\u597D\u7684\u5730\u65B9\uFF0C\u8BF7\u5728 GitHub Issues \u4E2D\u53CD\u9988\u95EE\u9898\u3002\n\n\u70B9\u51FB\u786E\u5B9A\u5C06\u8DF3\u8F6C\u5230 GitHub Issues \u9875\u9762\u3002",
       },
-      resetDefaultTitle: {
-        en: "Reset Default",
-        zh: "恢复默认",
-      },
+      resetDefaultTitle: { en: "Reset Default", zh: "\u6062\u590D\u9ED8\u8BA4" },
       resetDefaultMessage: {
         en: "Are you sure you want to reset to default? This will delete all information, please make a backup.\n\nClick OK to clear all data and refresh the page.",
-        zh: "是否要恢复默认，会删除所有信息，请做好备份。\n\n点击确定后将清除所有数据并刷新网页。",
+        zh: "\u662F\u5426\u8981\u6062\u590D\u9ED8\u8BA4\uFF0C\u4F1A\u5220\u9664\u6240\u6709\u4FE1\u606F\uFF0C\u8BF7\u505A\u597D\u5907\u4EFD\u3002\n\n\u70B9\u51FB\u786E\u5B9A\u540E\u5C06\u6E05\u9664\u6240\u6709\u6570\u636E\u5E76\u5237\u65B0\u7F51\u9875\u3002",
       },
-      confirm: {
-        en: "OK",
-        zh: "确定",
-      },
-      cancel: {
-        en: "Cancel",
-        zh: "取消",
-      },
+      confirm: { en: "OK", zh: "\u786E\u5B9A" },
+      cancel: { en: "Cancel", zh: "\u53D6\u6D88" },
     };
-
     return translations[key]?.[language] || key;
   };
 
-  // 处理bug反馈点击
-  const handleBugReportClick = () => {
-    setBugReportModalOpen(true);
-  };
-
-  // 确认bug反馈
+  const handleBugReportClick = () => setBugReportModalOpen(true);
   const handleBugReportConfirm = () => {
     setBugReportModalOpen(false);
     window.open("https://github.com/ltlylfun/ResumeToJob/issues", "_blank");
   };
 
-  // 处理恢复默认点击
-  const handleResetDefaultClick = () => {
-    setResetDefaultModalOpen(true);
-  };
-
-  // 确认恢复默认
+  const handleResetDefaultClick = () => setResetDefaultModalOpen(true);
   const handleResetDefaultConfirm = () => {
     setResetDefaultModalOpen(false);
     try {
       clearLocalStorage();
-      console.info("用户手动重置应用状态");
-    } catch (error) {
-      console.error("重置应用状态失败:", error);
-      // 如果清除失败，回退到清除整个 localStorage
+    } catch {
       localStorage.clear();
     }
     window.location.reload();
   };
 
-  // 关闭移动端菜单
-  const closeMenu = () => {
-    setMenuOpen(false);
-  };
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <>
@@ -114,16 +74,10 @@ export const TopNavBar = () => {
           <Link href="/" className="flex items-center gap-2">
             <span className="sr-only">ResumeToJob</span>
             <img src={logoSrc.src} alt="Logo" className="h-8 w-auto" />
-            <span className="text-lg font-semibold text-gray-800">
-              ResumeToJob
-            </span>
+            <span className="text-lg font-semibold text-gray-800">ResumeToJob</span>
           </Link>
 
-          {/* 桌面导航 */}
-          <nav
-            aria-label="Site Nav Bar"
-            className="hidden items-center gap-2 text-sm font-medium md:flex"
-          >
+          <nav aria-label="Site Nav Bar" className="hidden items-center gap-2 text-sm font-medium md:flex">
             <button
               onClick={handleBugReportClick}
               className="rounded-md px-1.5 py-2 text-gray-500 hover:bg-gray-100 focus-visible:bg-gray-100 lg:px-4"
@@ -136,16 +90,19 @@ export const TopNavBar = () => {
             >
               {translate("resetDefault")}
             </button>
-            {[["/resume-builder", translate("build")]].map(([href, text]) => (
+            {[
+              ["/resume-builder", translate("build")],
+              ["/resume-compare", translate("compare")],
+            ].map(([href, text]) => (
               <Link
                 key={text}
                 className="rounded-md px-1.5 py-2 text-gray-500 hover:bg-gray-100 focus-visible:bg-gray-100 lg:px-4"
-                href={href}
+                href={href as string}
               >
                 {text}
               </Link>
             ))}
-            <LanguageSwitcher />{" "}
+            <LanguageSwitcher />
             <div className="ml-1 mt-1 hidden sm:block">
               <iframe
                 src="https://ghbtns.com/github-btn.html?user=ltlylfun&repo=ResumeToJob&type=star&count=true"
@@ -157,38 +114,20 @@ export const TopNavBar = () => {
             </div>
           </nav>
 
-          {/* 移动端菜单按钮 */}
           <button
             className="rounded-md p-2 hover:bg-gray-100 md:hidden"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              className="h-6 w-6 text-gray-600"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6 text-gray-600">
               {menuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               )}
             </svg>
           </button>
 
-          {/* 移动端下拉菜单 */}
           {menuOpen && (
             <div className="absolute left-0 right-0 top-[var(--top-nav-bar-height)] z-50 bg-white shadow-lg md:hidden">
               <div className="flex flex-col py-2">
@@ -201,7 +140,6 @@ export const TopNavBar = () => {
                 >
                   {translate("bugReport")}
                 </button>
-
                 <button
                   onClick={() => {
                     handleResetDefaultClick();
@@ -211,18 +149,19 @@ export const TopNavBar = () => {
                 >
                   {translate("resetDefault")}
                 </button>
-                {[["/resume-builder", translate("build")]].map(
-                  ([href, text]) => (
-                    <Link
-                      key={text}
-                      onClick={closeMenu}
-                      className="px-4 py-3 text-gray-700 hover:bg-gray-100"
-                      href={href}
-                    >
-                      {text}
-                    </Link>
-                  ),
-                )}
+                {[
+                  ["/resume-builder", translate("build")],
+                  ["/resume-compare", translate("compare")],
+                ].map(([href, text]) => (
+                  <Link
+                    key={text}
+                    onClick={closeMenu}
+                    className="px-4 py-3 text-gray-700 hover:bg-gray-100"
+                    href={href as string}
+                  >
+                    {text}
+                  </Link>
+                ))}
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-gray-700">语言/Language</span>
                   <LanguageSwitcher />
@@ -233,7 +172,6 @@ export const TopNavBar = () => {
         </div>
       </header>
 
-      {/* Bug反馈确认模态框 */}
       <ConfirmModal
         isOpen={bugReportModalOpen}
         onClose={() => setBugReportModalOpen(false)}
@@ -244,7 +182,6 @@ export const TopNavBar = () => {
         cancelText={translate("cancel")}
       />
 
-      {/* 恢复默认确认模态框 */}
       <ConfirmModal
         isOpen={resetDefaultModalOpen}
         onClose={() => setResetDefaultModalOpen(false)}
@@ -258,3 +195,6 @@ export const TopNavBar = () => {
     </>
   );
 };
+
+export default TopNavBar;
+

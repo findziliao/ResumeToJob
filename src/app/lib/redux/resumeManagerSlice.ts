@@ -1,4 +1,5 @@
-import { createSlice, createSelector, type PayloadAction } from "@reduxjs/toolkit";
+﻿import { createSlice, createSelector, type PayloadAction } from "@reduxjs/toolkit";
+锘縤mport { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "lib/redux/store";
 import { deepClone } from "lib/deep-clone";
 import { generateUniqueId } from "lib/utils/string-utils";
@@ -206,13 +207,13 @@ export const resumeManagerSlice = createSlice({
     changeProfile: (
       state,
       action: PayloadAction<{
+        resumeId?: string;
         field: keyof ResumeProfile;
         value: string | string[];
       }>,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { field, value } = action.payload;
         currentResume.content.profile[field] = value as any;
@@ -223,12 +224,11 @@ export const resumeManagerSlice = createSlice({
     changeWorkExperiences: (
       state,
       action: PayloadAction<
-        CreateChangeActionWithDescriptions<ResumeWorkExperience>
+        { resumeId?: string } & CreateChangeActionWithDescriptions<ResumeWorkExperience>
       >,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { idx, field, value } = action.payload;
         const workExperience = currentResume.content.workExperiences[idx];
@@ -240,12 +240,11 @@ export const resumeManagerSlice = createSlice({
     changeEducations: (
       state,
       action: PayloadAction<
-        CreateChangeActionWithDescriptions<ResumeEducation>
+        { resumeId?: string } & CreateChangeActionWithDescriptions<ResumeEducation>
       >,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { idx, field, value } = action.payload;
         const education = currentResume.content.educations[idx];
@@ -256,11 +255,12 @@ export const resumeManagerSlice = createSlice({
 
     changeProjects: (
       state,
-      action: PayloadAction<CreateChangeActionWithDescriptions<ResumeProject>>,
+      action: PayloadAction<
+        { resumeId?: string } & CreateChangeActionWithDescriptions<ResumeProject>
+      >,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { idx, field, value } = action.payload;
         const project = currentResume.content.projects[idx];
@@ -272,6 +272,7 @@ export const resumeManagerSlice = createSlice({
     changeSkills: (
       state,
       action: PayloadAction<
+        { resumeId?: string } & (
         | { field: "descriptions"; value: string[] }
         | {
             field: "featuredSkills";
@@ -279,11 +280,10 @@ export const resumeManagerSlice = createSlice({
             skill: string;
             rating: number;
           }
-      >,
+      )>,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { field } = action.payload;
         if (field === "descriptions") {
@@ -302,11 +302,10 @@ export const resumeManagerSlice = createSlice({
 
     changeCustom: (
       state,
-      action: PayloadAction<{ field: "descriptions"; value: string[] }>,
+      action: PayloadAction<{ resumeId?: string; field: "descriptions"; value: string[] }>,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { value } = action.payload;
         currentResume.content.custom.descriptions = value;
@@ -314,10 +313,9 @@ export const resumeManagerSlice = createSlice({
       }
     },
 
-    addSectionInForm: (state, action: PayloadAction<{ form: ShowForm }>) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+    addSectionInForm: (state, action: PayloadAction<{ resumeId?: string; form: ShowForm }>) => {
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { form } = action.payload;
         switch (form) {
@@ -347,14 +345,14 @@ export const resumeManagerSlice = createSlice({
     moveSectionInForm: (
       state,
       action: PayloadAction<{
+        resumeId?: string;
         form: ShowForm;
         idx: number;
         direction: "up" | "down";
       }>,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { form, idx, direction } = action.payload;
         if (form !== "skills" && form !== "custom") {
@@ -381,11 +379,10 @@ export const resumeManagerSlice = createSlice({
 
     deleteSectionInFormByIdx: (
       state,
-      action: PayloadAction<{ form: ShowForm; idx: number }>,
+      action: PayloadAction<{ resumeId?: string; form: ShowForm; idx: number }>,
     ) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
         const { form, idx } = action.payload;
         if (form !== "skills" && form !== "custom") {
@@ -395,12 +392,11 @@ export const resumeManagerSlice = createSlice({
       }
     },
 
-    setResume: (state, action: PayloadAction<Resume>) => {
-      const currentResume = state.resumes.find(
-        (r) => r.metadata.id === state.currentResumeId,
-      );
+    setResume: (state, action: PayloadAction<{ resumeId?: string; content: Resume }>) => {
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
       if (currentResume) {
-        currentResume.content = action.payload;
+        currentResume.content = action.payload.content;
         currentResume.metadata.updatedAt = new Date().toISOString();
       }
     },
@@ -444,6 +440,54 @@ export const selectResume = createSelector(
   [selectCurrentResume],
   (currentResume) => (currentResume ? currentResume.content : initialResumeState)
 );
+// Parameterized selectors for dual-editing
+export const selectResumeById = (state: RootState, resumeId?: string | null) => {
+  if (!resumeId) return initialResumeState;
+  const r = state.resumeManager.resumes.find((x) => x.metadata.id === resumeId);
+  return r ? r.content : initialResumeState;
+};
+
+export const selectProfileById = (state: RootState, resumeId?: string | null) => {
+  if (!resumeId) return initialProfile;
+  const r = state.resumeManager.resumes.find((x) => x.metadata.id === resumeId);
+  return r ? r.content.profile : initialProfile;
+};
+
+export const selectWorkExperiencesById = (state: RootState, resumeId?: string | null) => {
+  const r = resumeId
+    ? state.resumeManager.resumes.find((x) => x.metadata.id === resumeId)
+    : null;
+  return r ? r.content.workExperiences : [initialWorkExperience];
+};
+
+export const selectEducationsById = (state: RootState, resumeId?: string | null) => {
+  const r = resumeId
+    ? state.resumeManager.resumes.find((x) => x.metadata.id === resumeId)
+    : null;
+  return r ? r.content.educations : [initialEducation];
+};
+
+export const selectProjectsById = (state: RootState, resumeId?: string | null) => {
+  const r = resumeId
+    ? state.resumeManager.resumes.find((x) => x.metadata.id === resumeId)
+    : null;
+  return r ? r.content.projects : [initialProject];
+};
+
+export const selectSkillsById = (state: RootState, resumeId?: string | null) => {
+  const r = resumeId
+    ? state.resumeManager.resumes.find((x) => x.metadata.id === resumeId)
+    : null;
+  return r ? r.content.skills : initialSkills;
+};
+
+export const selectCustomById = (state: RootState, resumeId?: string | null) => {
+  const r = resumeId
+    ? state.resumeManager.resumes.find((x) => x.metadata.id === resumeId)
+    : null;
+  return r ? r.content.custom : initialCustom;
+};
+
 
 export const selectProfile = createSelector(
   [selectCurrentResume],
@@ -483,3 +527,6 @@ export const selectCustom = createSelector(
 );
 
 export default resumeManagerSlice.reducer;
+
+
+

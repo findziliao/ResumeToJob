@@ -21,6 +21,10 @@ export const getFontDetails = (fontFamily: string) => {
       fontsourceName = "noto-sans-sc";
       subset = "chinese-simplified";
       break;
+    case "NotoSansTC":
+      fontsourceName = "noto-sans-tc";
+      subset = "chinese-traditional";
+      break;
   }
   return { fontsourceName, subset };
 };

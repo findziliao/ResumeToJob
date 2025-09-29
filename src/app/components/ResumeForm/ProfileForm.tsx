@@ -5,14 +5,16 @@ import {
   BulletListTextarea,
 } from "components/ResumeForm/Form/InputGroup";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
-import { changeProfile, selectProfile } from "lib/redux/resumeManagerSlice";
+import { changeProfile, selectProfile, selectProfileById } from "lib/redux/resumeManagerSlice";
 import { ResumeProfile } from "lib/redux/types";
 import { CameraIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
 
-export const ProfileForm = () => {
-  const profile = useAppSelector(selectProfile);
+export const ProfileForm = ({ resumeId }: { resumeId?: string }) => {
+  const profile = useAppSelector((state) =>
+    resumeId ? selectProfileById(state as any, resumeId) : selectProfile(state as any),
+  );
   const dispatch = useAppDispatch();
   const { language } = useLanguageRedux();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +83,7 @@ export const ProfileForm = () => {
     field: keyof ResumeProfile,
     value: string | string[],
   ) => {
-    dispatch(changeProfile({ field, value: value as any }));
+    dispatch(changeProfile({ resumeId, field, value: value as any }));
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
