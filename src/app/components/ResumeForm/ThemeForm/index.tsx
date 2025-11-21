@@ -57,6 +57,18 @@ export const ThemeForm = () => {
         en: "Document Size",
         zh: "文档大小",
       },
+      markdownOptions: {
+        en: "Markdown Options",
+        zh: "Markdown 显示",
+      },
+      showContact: {
+        en: "Show Contact",
+        zh: "显示联系方式",
+      },
+      showSummary: {
+        en: "Show Summary",
+        zh: "显示个人简介",
+      },
     };
 
     return translations[key]?.[language] || key;
@@ -129,13 +141,40 @@ export const ThemeForm = () => {
             handleSettingsChange={handleSettingsChange}
           />
         </div>{" "}
+      <div>
+        <InputGroupWrapper label={translate("documentSize")} />
+        <DocumentSizeSelections
+          themeColor={themeColor}
+          selectedDocumentSize={documentSize}
+          handleSettingsChange={handleSettingsChange}
+        />
+      </div>
         <div>
-          <InputGroupWrapper label={translate("documentSize")} />
-          <DocumentSizeSelections
-            themeColor={themeColor}
-            selectedDocumentSize={documentSize}
-            handleSettingsChange={handleSettingsChange}
-          />
+          <InputGroupWrapper label={translate("markdownOptions")} />
+          <div className="mt-2 flex flex-col gap-2 text-sm text-gray-700">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={settings.showProfileContact}
+                onChange={(e) =>
+                  handleSettingsChange("showProfileContact" as any, e.target.checked as any)
+                }
+              />
+              <span>{translate("showContact")}</span>
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={settings.showProfileSummary}
+                onChange={(e) =>
+                  handleSettingsChange("showProfileSummary" as any, e.target.checked as any)
+                }
+              />
+              <span>{translate("showSummary")}</span>
+            </label>
+          </div>
         </div>
       </div>
     </BaseForm>

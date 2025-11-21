@@ -5,6 +5,8 @@ import { MagnifyingGlassIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outl
 import { usePDF } from "@react-pdf/renderer";
 import dynamic from "next/dynamic";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
+import { useAppSelector } from "lib/redux/hooks";
+import { selectSettings, type ShowForm } from "lib/redux/settingsSlice";
 import type { Resume } from "../../lib/redux/types";
 
 const ResumeControlBar = ({
@@ -39,6 +41,7 @@ const ResumeControlBar = ({
   };
 
   const [instance, update] = usePDF({ document });
+  const settingsState = useAppSelector(selectSettings);
 
   // i18n for Markdown headings
   const tMd = (key: string) => {
@@ -77,61 +80,82 @@ const ResumeControlBar = ({
     if (profile?.phone) contact.push(`- ${tMd("phone")}: ${profile.phone}`);
     if (profile?.url) contact.push(`- ${tMd("website")}: ${profile.url}`);
     if (profile?.location) contact.push(`- ${tMd("location")}: ${profile.location}`);
-    if (contact.length) lines.push("", `## ${tMd("contact")}`, ...contact);
+    if (settingsState.showProfileContact && contact.length)
+      lines.push("", `## ${tMd("contact")}`, ...contact);
 
-    if (profile?.summary?.length) {
+    if (settingsState.showProfileSummary && profile?.summary?.length) {
       lines.push("", `## ${tMd("summary")}`);
       profile.summary.forEach((s) => s && lines.push(`- ${s}`));
     }
 
-    if (workExperiences?.length) {
-      lines.push("", `## ${tMd("work")}`);
-      workExperiences.forEach(({ company, jobTitle, date, descriptions }) => {
-        const titleLine = [jobTitle, company].filter(Boolean).join(", ");
-        if (titleLine) lines.push(`### ${titleLine}`);
-        if (date) lines.push(`_${tMd("date")}: ${date}_`);
-        descriptions?.forEach((d) => d && lines.push(`- ${d}`));
-      });
-    }
+    // 与 PDF 一致：按 settings.formsOrder 顺序输出可见且有内容的板块
+    const { formsOrder, formToShow, formToHeading } = settingsState;
+    const hasContent: Record<ShowForm, boolean> = {
+      workExperiences:
+        (workExperiences?.length || 0) > 0 &&
+        workExperiences.some(
+          (exp) => exp.company || exp.jobTitle || exp.date || (exp.descriptions && exp.descriptions.length > 0),
+        ),
+      educations:
+        (educations?.length || 0) > 0 &&
+        educations.some(
+          (edu) => edu.school || edu.degree || edu.date || edu.gpa || (edu.descriptions && edu.descriptions.length > 0),
+        ),
+      projects:
+        (projects?.length || 0) > 0 &&
+        projects.some((proj) => proj.project || proj.date || (proj.descriptions && proj.descriptions.length > 0)),
+      skills:
+        (skills?.featuredSkills?.some((s) => s.skill) || false) || (skills?.descriptions && skills.descriptions.length > 0) || false,
+      custom: custom?.descriptions && custom.descriptions.length > 0 || false,
+    } as Record<ShowForm, boolean>;
 
-    if (projects?.length) {
-      lines.push("", `## ${tMd("projects")}`);
-      projects.forEach(({ project, date, descriptions }) => {
-        if (project) lines.push(`### ${project}`);
-        if (date) lines.push(`_${tMd("date")}: ${date}_`);
-        descriptions?.forEach((d) => d && lines.push(`- ${d}`));
-      });
-    }
-
-    if (educations?.length) {
-      lines.push("", `## ${tMd("education")}`);
-      educations.forEach(({ school, degree, date, gpa, descriptions }) => {
-        const titleLine = [degree, school].filter(Boolean).join(", ");
-        if (titleLine) lines.push(`### ${titleLine}`);
-        const meta: string[] = [];
-        if (date) meta.push(`${tMd("date")}: ${date}`);
-        if (gpa) meta.push(`${tMd("gpa")}: ${gpa}`);
-        if (meta.length) lines.push(`_${meta.join(" | ")}_`);
-        descriptions?.forEach((d) => d && lines.push(`- ${d}`));
-      });
-    }
-
-    if ((skills?.featuredSkills?.length || 0) > 0 || (skills?.descriptions?.length || 0) > 0) {
-      lines.push("", `## ${tMd("skills")}`);
-      if (skills.featuredSkills?.length) {
-        const featured = skills.featuredSkills
-          .filter((s) => s.skill)
-          .map((s) => (s.rating ? `${s.skill} (${s.rating}/5)` : `${s.skill}`))
-          .join(", ");
-        if (featured) lines.push(`- ${tMd("featuredSkills")}: ${featured}`);
+    const orderedForms = formsOrder.filter((f) => formToShow[f] && hasContent[f]);
+    orderedForms.forEach((form) => {
+      const headingLabel = formToHeading[form];
+      lines.push("", `## ${headingLabel}`);
+      switch (form) {
+        case "workExperiences":
+          workExperiences.forEach(({ company, jobTitle, date, descriptions }) => {
+            const titleLine = [jobTitle, company].filter(Boolean).join(", ");
+            if (titleLine) lines.push(`### ${titleLine}`);
+            if (date) lines.push(`_${tMd("date")}: ${date}_`);
+            descriptions?.forEach((d) => d && lines.push(`- ${d}`));
+          });
+          break;
+        case "projects":
+          projects.forEach(({ project, date, descriptions }) => {
+            if (project) lines.push(`### ${project}`);
+            if (date) lines.push(`_${tMd("date")}: ${date}_`);
+            descriptions?.forEach((d) => d && lines.push(`- ${d}`));
+          });
+          break;
+        case "educations":
+          educations.forEach(({ school, degree, date, gpa, descriptions }) => {
+            const titleLine = [degree, school].filter(Boolean).join(", ");
+            if (titleLine) lines.push(`### ${titleLine}`);
+            const meta: string[] = [];
+            if (date) meta.push(`${tMd("date")}: ${date}`);
+            if (gpa) meta.push(`${tMd("gpa")}: ${gpa}`);
+            if (meta.length) lines.push(`_${meta.join(" | ")}_`);
+            descriptions?.forEach((d) => d && lines.push(`- ${d}`));
+          });
+          break;
+        case "skills": {
+          if (skills.featuredSkills?.length) {
+            const featured = skills.featuredSkills
+              .filter((s) => s.skill)
+              .map((s) => (s.rating ? `${s.skill} (${s.rating}/5)` : `${s.skill}`))
+              .join(", ");
+            if (featured) lines.push(`- ${tMd("featuredSkills")}: ${featured}`);
+          }
+          skills.descriptions?.forEach((d) => d && lines.push(`- ${d}`));
+          break;
+        }
+        case "custom":
+          custom.descriptions.forEach((d) => d && lines.push(`- ${d}`));
+          break;
       }
-      skills.descriptions?.forEach((d) => d && lines.push(`- ${d}`));
-    }
-
-    if (custom?.descriptions?.length) {
-      lines.push("", `## ${tMd("custom")}`);
-      custom.descriptions.forEach((d) => d && lines.push(`- ${d}`));
-    }
+    });
 
     lines.push("", "\n");
     return lines.join("\n");

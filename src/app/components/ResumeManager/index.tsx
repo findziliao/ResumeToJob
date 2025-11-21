@@ -9,16 +9,33 @@ import {
   switchResume,
   updateResumeMetadata,
 } from "lib/redux/resumeManagerSlice";
+
+import { selectSettings } from "lib/redux/settingsSlice";
 import type { AppDispatch } from "lib/redux/store";
 import { Button } from "../Button";
 import { useLanguageRedux } from "lib/hooks/useLanguageRedux";
 import { ResumeImportExport } from "./ResumeImportExport";
 import { ConfirmModal } from "../ConfirmModal";
+import { DownloadModal } from "./DownloadModal";
+import { pdf } from "@react-pdf/renderer";
+import { MergedResumePDF } from "../Resume/ResumePDF/MergedResumePDF";
+import { generateMarkdown } from "lib/utils/generateMarkdown";
 
 interface ResumeManagerProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const saveAs = (blob: Blob, fileName: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
 export const ResumeManager: React.FC<ResumeManagerProps> = ({
   isOpen,
@@ -29,12 +46,16 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
 
   const resumes = useSelector(selectAllResumes);
   const currentResumeId = useSelector(selectCurrentResumeId);
+  const settings = useSelector(selectSettings);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newResumeTitle, setNewResumeTitle] = useState("");
   const [editingResume, setEditingResume] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedResumes, setSelectedResumes] = useState<Set<string>>(
+    new Set()
+  );
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     resumeId: string | null;
@@ -44,6 +65,8 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
     resumeId: null,
     resumeTitle: "",
   });
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const t = (key: string) => {
     const translations: Record<string, Record<string, string>> = {
@@ -78,6 +101,9 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
         zh: '确定要删除简历 "{title}" 吗？\n\n此操作无法撤销，所有相关数据将被永久删除。',
         en: 'Are you sure you want to delete the resume "{title}"?\n\nThis action cannot be undone and all related data will be permanently deleted.',
       },
+      "select-all": { zh: "全选", en: "Select All" },
+      "download-selected": { zh: "下载选中", en: "Download Selected" },
+      downloading: { zh: "下载中...", en: "Downloading..." },
     };
     return translations[key]?.[language] || key;
   };
@@ -87,7 +113,7 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
       dispatch(
         createResume({
           title: newResumeTitle.trim(),
-        }),
+        })
       );
       setNewResumeTitle("");
       setShowCreateForm(false);
@@ -110,6 +136,12 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
   const handleConfirmDelete = () => {
     if (deleteConfirm.resumeId) {
       dispatch(deleteResume(deleteConfirm.resumeId));
+      // Remove from selection if deleted
+      if (selectedResumes.has(deleteConfirm.resumeId)) {
+        const newSelected = new Set(selectedResumes);
+        newSelected.delete(deleteConfirm.resumeId);
+        setSelectedResumes(newSelected);
+      }
     }
     setDeleteConfirm({
       isOpen: false,
@@ -140,7 +172,7 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
         updateResumeMetadata({
           id: resumeId,
           metadata: { title: editTitle.trim() },
-        }),
+        })
       );
       setEditingResume(null);
       setEditTitle("");
@@ -158,8 +190,73 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(
-      language === "zh" ? "zh-CN" : "en-US",
+      language === "zh" ? "zh-CN" : "en-US"
     );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedResumes.size === filteredResumes.length) {
+      setSelectedResumes(new Set());
+    } else {
+      setSelectedResumes(new Set(filteredResumes.map((r) => r.metadata.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedResumes);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedResumes(newSelected);
+  };
+
+  const handleDownloadClick = () => {
+    if (selectedResumes.size === 0) return;
+    setDownloadModalOpen(true);
+  };
+
+  const handleConfirmDownload = async (orderedIds: string[]) => {
+    setIsDownloading(true);
+
+    try {
+      // Map ordered IDs to resume data
+      const selectedResumeData = orderedIds
+        .map((id) => resumes.find((r) => r.metadata.id === id))
+        .filter((r) => !!r) as any[];
+
+      if (selectedResumeData.length === 0) return;
+
+      // 1. Generate Merged PDF
+      const blob = await pdf(
+        <MergedResumePDF
+          resumes={selectedResumeData.map((r) => r.content)}
+          settings={settings}
+          isPDF={true}
+        />
+      ).toBlob();
+      saveAs(blob, "merged_resumes.pdf");
+
+      // 2. Generate Merged Markdown
+      const markdownContent = selectedResumeData
+        .map((r) => {
+          const content = generateMarkdown(r.content, settings, language);
+          return `# ${r.metadata.title}\n\n${content}`;
+        })
+        .join("\n\n---\n\n");
+
+      const mdBlob = new Blob([markdownContent], {
+        type: "text/markdown;charset=utf-8",
+      });
+      saveAs(mdBlob, "merged_resumes.md");
+
+      setDownloadModalOpen(false);
+    } catch (error) {
+      console.error("Download failed:", error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -215,6 +312,14 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
                 >
                   {t("create-new")}
                 </Button>
+                {selectedResumes.size > 0 && (
+                  <Button
+                    onClick={handleDownloadClick}
+                    className="whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                  >
+                    {t("download-selected")}
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -266,117 +371,148 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
                 <p className="text-lg text-gray-500">{t("no-resumes")}</p>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {filteredResumes.map((resume) => (
-                  <div
-                    key={resume.metadata.id}
-                    className={`rounded-lg border p-4 transition-all ${
-                      resume.metadata.id === currentResumeId
+              <>
+                <div className="mb-2 flex items-center gap-2 px-1">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filteredResumes.length > 0 &&
+                      selectedResumes.size === filteredResumes.length
+                    }
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    {t("select-all")}
+                  </span>
+                </div>
+                <div className="grid gap-4">
+                  {filteredResumes.map((resume) => (
+                    <div
+                      key={resume.metadata.id}
+                      className={`rounded-lg border p-4 transition-all ${resume.metadata.id === currentResumeId
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        {editingResume === resume.metadata.id ? (
-                          <div className="mb-2 flex gap-2">
-                            <input
-                              type="text"
-                              value={editTitle}
-                              onChange={(e) => setEditTitle(e.target.value)}
-                              className="flex-1 rounded border border-gray-300 px-3 py-1 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                              onClick={() => handleSaveEdit(resume.metadata.id)}
-                              className="rounded border border-gray-800 bg-white px-3 py-1 text-gray-800 transition-colors hover:bg-gray-50"
-                            >
-                              {t("save")}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingResume(null);
-                                setEditTitle("");
-                              }}
-                              className="rounded border border-gray-400 bg-white px-3 py-1 text-gray-600 transition-colors hover:bg-gray-50"
-                            >
-                              {t("cancel")}
-                            </button>
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedResumes.has(resume.metadata.id)}
+                            onChange={() => toggleSelect(resume.metadata.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              {editingResume === resume.metadata.id ? (
+                                <div className="mb-2 flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={editTitle}
+                                    onChange={(e) =>
+                                      setEditTitle(e.target.value)
+                                    }
+                                    className="flex-1 rounded border border-gray-300 px-3 py-1 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  <button
+                                    onClick={() =>
+                                      handleSaveEdit(resume.metadata.id)
+                                    }
+                                    className="rounded border border-gray-800 bg-white px-3 py-1 text-gray-800 transition-colors hover:bg-gray-50"
+                                  >
+                                    {t("save")}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingResume(null);
+                                      setEditTitle("");
+                                    }}
+                                    className="rounded border border-gray-400 bg-white px-3 py-1 text-gray-600 transition-colors hover:bg-gray-50"
+                                  >
+                                    {t("cancel")}
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="mb-2 flex items-center gap-2">
+                                  <h3 className="text-lg font-semibold text-gray-900">
+                                    {resume.metadata.title}
+                                  </h3>
+                                  {resume.metadata.id === currentResumeId && (
+                                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
+                                      {t("current")}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {resume.metadata.description && (
+                                <p className="mb-2 text-gray-600">
+                                  {resume.metadata.description}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                                <span>
+                                  📅 {t("created-at")}:{" "}
+                                  {formatDate(resume.metadata.createdAt)}
+                                </span>
+                                <span>
+                                  🔄 {t("updated-at")}:{" "}
+                                  {formatDate(resume.metadata.updatedAt)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4 flex gap-2">
+                              {resume.metadata.id !== currentResumeId && (
+                                <Button
+                                  onClick={() =>
+                                    handleSwitchResume(resume.metadata.id)
+                                  }
+                                  className="rounded border border-gray-800 bg-white px-3 py-1 text-sm text-gray-800 transition-colors hover:bg-gray-50"
+                                >
+                                  {t("switch")}
+                                </Button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setEditingResume(resume.metadata.id);
+                                  setEditTitle(resume.metadata.title);
+                                }}
+                                className="rounded border border-gray-400 bg-white px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+                              >
+                                {t("edit")}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleCloneResume(
+                                    resume.metadata.id,
+                                    resume.metadata.title,
+                                  )
+                                }
+                                className="rounded border border-gray-400 bg-white px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+                              >
+                                {t("clone")}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDeleteResume(
+                                    resume.metadata.id,
+                                    resume.metadata.title,
+                                  )
+                                }
+                                className="rounded px-3 py-1 text-sm text-red-600 transition-colors hover:bg-red-50"
+                              >
+                                {t("delete")}
+                              </button>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="mb-2 flex items-center gap-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {resume.metadata.title}
-                            </h3>
-                            {resume.metadata.id === currentResumeId && (
-                              <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
-                                {t("current")}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {resume.metadata.description && (
-                          <p className="mb-2 text-gray-600">
-                            {resume.metadata.description}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                          <span>
-                            📅 {t("created-at")}:{" "}
-                            {formatDate(resume.metadata.createdAt)}
-                          </span>
-                          <span>
-                            🔄 {t("updated-at")}:{" "}
-                            {formatDate(resume.metadata.updatedAt)}
-                          </span>
                         </div>
                       </div>
-                      <div className="ml-4 flex gap-2">
-                        {resume.metadata.id !== currentResumeId && (
-                          <Button
-                            onClick={() =>
-                              handleSwitchResume(resume.metadata.id)
-                            }
-                            className="rounded border border-gray-800 bg-white px-3 py-1 text-sm text-gray-800 transition-colors hover:bg-gray-50"
-                          >
-                            {t("switch")}
-                          </Button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setEditingResume(resume.metadata.id);
-                            setEditTitle(resume.metadata.title);
-                          }}
-                          className="rounded border border-gray-400 bg-white px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50"
-                        >
-                          {t("edit")}
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleCloneResume(
-                              resume.metadata.id,
-                              resume.metadata.title,
-                            )
-                          }
-                          className="rounded border border-gray-400 bg-white px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50"
-                        >
-                          {t("clone")}
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDeleteResume(
-                              resume.metadata.id,
-                              resume.metadata.title,
-                            )
-                          }
-                          className="rounded px-3 py-1 text-sm text-red-600 transition-colors hover:bg-red-50"
-                        >
-                          {t("delete")}
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -394,6 +530,15 @@ export const ResumeManager: React.FC<ResumeManagerProps> = ({
         confirmText={t("delete")}
         cancelText={t("cancel")}
         confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
+
+      <DownloadModal
+        isOpen={downloadModalOpen}
+        onClose={() => setDownloadModalOpen(false)}
+        onConfirm={handleConfirmDownload}
+        resumes={resumes}
+        selectedIds={Array.from(selectedResumes)}
+        isDownloading={isDownloading}
       />
     </div>
   );

@@ -16,6 +16,8 @@ import {
   type Settings,
   type ShowForm,
 } from "lib/redux/settingsSlice";
+import { selectLanguage } from "lib/redux/languageSlice";
+import { selectSettings } from "lib/redux/settingsSlice";
 import { setAllResumes, createResume } from "lib/redux/resumeManagerSlice";
 import { deepMerge } from "lib/deep-merge";
 
@@ -158,4 +160,40 @@ export const useSetInitialStore = () => {
       }
     }
   }, [dispatch]);
+};
+
+// 根据语言自动同步各板块标题（未被用户自定义的才会同步）
+export const useSyncHeadingsWithLanguage = () => {
+  const dispatch = useAppDispatch();
+  const language = useAppSelector(selectLanguage);
+  const settings = useAppSelector(selectSettings);
+
+  useEffect(() => {
+    try {
+      const targetHeadings = formHeadings[language] || formHeadings.zh;
+      // 仅更新未自定义的标题
+      const newFormToHeading = { ...settings.formToHeading };
+      (Object.keys(settings.formToHeading) as ShowForm[]).forEach((key) => {
+        if (!settings.customizedHeadings[key]) {
+          newFormToHeading[key] = targetHeadings[key];
+        }
+      });
+
+      // 避免无意义的 dispatch
+      const changed = (Object.keys(newFormToHeading) as ShowForm[]).some(
+        (k) => newFormToHeading[k] !== settings.formToHeading[k],
+      );
+
+      if (changed) {
+        dispatch(
+          setSettings({
+            ...settings,
+            formToHeading: newFormToHeading,
+          }),
+        );
+      }
+    } catch (error) {
+      console.error("Sync headings with language failed", error);
+    }
+  }, [dispatch, language]);
 };

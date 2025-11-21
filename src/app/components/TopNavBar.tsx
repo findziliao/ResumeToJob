@@ -2,7 +2,6 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import logoSrc from "public/logo-500.png";
 import { cx } from "lib/cx";
 import { useLanguageRedux } from "../lib/hooks/useLanguageRedux";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -73,7 +72,7 @@ export const TopNavBar = () => {
         <div className="flex h-10 w-full items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="sr-only">ResumeToJob</span>
-            <img src={logoSrc.src} alt="Logo" className="h-8 w-auto" />
+            <img src="/logo-500.png" alt="Logo" className="h-8 w-auto" />
             <span className="text-lg font-semibold text-gray-800">ResumeToJob</span>
           </Link>
 

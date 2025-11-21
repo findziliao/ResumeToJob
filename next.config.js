@@ -6,6 +6,9 @@ const nextConfig = {
   // the canvas package for webpack
   // https://github.com/mozilla/pdf.js/issues/16214
   output: "standalone",
+  // Use a custom dist directory to avoid Windows file locks on .next
+  // This applies to both dev and build and still serves assets under /_next/
+  distDir: ".next-dev",
   experimental: {
     esmExternals: "loose",
   },

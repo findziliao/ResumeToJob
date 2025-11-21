@@ -7,6 +7,9 @@ export interface Settings {
   fontSize: string;
   documentSize: string;
   template: string;
+  // Profile 相关在 Markdown 中的显示控制
+  showProfileContact: boolean;
+  showProfileSummary: boolean;
   formToShow: {
     workExperiences: boolean;
     educations: boolean;
@@ -66,6 +69,8 @@ export const initialSettings: Settings = {
   fontSize: DEFAULT_FONT_SIZE,
   documentSize: "A4",
   template: DEFAULT_TEMPLATE,
+  showProfileContact: true,
+  showProfileSummary: true,
   formToShow: {
     workExperiences: true,
     educations: true,
@@ -92,10 +97,11 @@ export const settingsSlice = createSlice({
   reducers: {
     changeSettings: (
       draft,
-      action: PayloadAction<{ field: GeneralSetting; value: string }>,
+      action: PayloadAction<{ field: GeneralSetting; value: string | boolean }>,
     ) => {
       const { field, value } = action.payload;
-      draft[field] = value;
+      // 支持字符串与布尔值
+      (draft as any)[field] = value as any;
     },
     changeShowForm: (
       draft,

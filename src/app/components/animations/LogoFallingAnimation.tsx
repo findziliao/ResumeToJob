@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import logoSrc from "public/logo-500.png";
+const logoSrc = "/logo-500.png";
 
 interface LogoProps {
   x: number;
@@ -133,7 +133,7 @@ export const LogoFallingAnimation = ({
           }}
         >
           <img
-            src={logoSrc.src}
+            src={logoSrc}
             alt=""
             style={{
               objectFit: "contain",

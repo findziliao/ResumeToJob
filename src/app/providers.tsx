@@ -6,12 +6,14 @@ import { store } from "./lib/redux/store";
 import {
   useSaveStateToLocalStorageOnChange,
   useSetInitialStore,
+  useSyncHeadingsWithLanguage,
 } from "./lib/redux/hooks";
 
 const StoreInitializer = ({ children }: { children: React.ReactNode }) => {
   useSetInitialStore();
 
   useSaveStateToLocalStorageOnChange();
+  useSyncHeadingsWithLanguage();
   return <>{children}</>;
 };
 
