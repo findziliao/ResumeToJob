@@ -73,7 +73,11 @@ export const WorkExperiencesForm = ({ resumeId }: { resumeId?: string }) => {
   }, [dispatch, language, translate]);
 
   return (
-    <Form form="workExperiences" addButtonText={translate("addWork")}>
+    <Form
+      form="workExperiences"
+      addButtonText={translate("addWork")}
+      resumeId={resumeId}
+    >
       {workExperiences.map(
         ({ id, company, jobTitle, date, descriptions }, idx) => {
           const handleWorkExperienceChange = (

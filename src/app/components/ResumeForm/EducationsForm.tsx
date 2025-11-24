@@ -82,7 +82,11 @@ export const EducationsForm = ({ resumeId }: { resumeId?: string }) => {
   }, [dispatch, language, form, translate]);
 
   return (
-    <Form form={form} addButtonText={translate("addEducation")}>
+    <Form
+      form={form}
+      addButtonText={translate("addEducation")}
+      resumeId={resumeId}
+    >
       {educations.map(
         ({ id, school, degree, gpa, date, descriptions }, idx) => {
           const handleEducationChange = (

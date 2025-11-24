@@ -67,7 +67,11 @@ export const ProjectsForm = ({ resumeId }: { resumeId?: string }) => {
   }, [dispatch, language, translate]);
 
   return (
-    <Form form="projects" addButtonText={translate("addProject")}>
+    <Form
+      form="projects"
+      addButtonText={translate("addProject")}
+      resumeId={resumeId}
+    >
       {projects.map(({ id, project, date, descriptions }, idx) => {
         const handleProjectChange = (
           ...[
