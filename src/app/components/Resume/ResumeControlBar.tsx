@@ -1,7 +1,10 @@
 "use client";
 import { useEffect } from "react";
 import { useSetDefaultScale } from "components/Resume/hooks";
-import { MagnifyingGlassIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/outline";
 import { usePDF } from "@react-pdf/renderer";
 import dynamic from "next/dynamic";
 import { useLanguageRedux } from "../../lib/hooks/useLanguageRedux";
@@ -34,8 +37,8 @@ const ResumeControlBar = ({
 
   const translate = (key: string) => {
     const translations: Record<string, Record<string, string>> = {
-      autoscale: { en: "Autoscale", zh: "\u81EA\u52A8\u7F29\u653E" },
-      download: { en: "Download Resume", zh: "\u4E0B\u8F7D\u7B80\u5386" },
+      autoscale: { en: "Autoscale", zh: "自动缩放" },
+      download: { en: "Download Resume", zh: "下载简历" },
     };
     return translations[key]?.[language] || key;
   };
@@ -46,21 +49,21 @@ const ResumeControlBar = ({
   // i18n for Markdown headings
   const tMd = (key: string) => {
     const translations: Record<string, Record<string, string>> = {
-      contact: { en: "Contact", zh: "\u8054\u7CFB\u65B9\u5F0F" },
-      email: { en: "Email", zh: "\u90AE\u7BB1" },
-      phone: { en: "Phone", zh: "\u7535\u8BDD" },
-      website: { en: "Website", zh: "\u7F51\u7AD9" },
-      location: { en: "Location", zh: "\u57CE\u5E02" },
-      summary: { en: "Summary", zh: "\u4E2A\u4EBA\u7B80\u4ECB" },
-      work: { en: "Work Experience", zh: "\u5DE5\u4F5C\u7ECF\u5386" },
-      education: { en: "Education", zh: "\u6559\u80B2\u7ECF\u5386" },
-      projects: { en: "Projects", zh: "\u9879\u76EE\u7ECF\u5386" },
-      skills: { en: "Skills", zh: "\u6280\u80FD" },
-      featuredSkills: { en: "Featured Skills", zh: "\u6838\u5FC3\u6280\u80FD" },
-      details: { en: "Details", zh: "\u8865\u5145\u8BF4\u660E" },
-      custom: { en: "Other", zh: "\u5176\u4ED6" },
-      gpa: { en: "GPA", zh: "\u7EE9\u70B9" },
-      date: { en: "Date", zh: "\u65F6\u95F4" },
+      contact: { en: "Contact", zh: "联系方式" },
+      email: { en: "Email", zh: "邮箱" },
+      phone: { en: "Phone", zh: "电话" },
+      website: { en: "Website", zh: "网站" },
+      location: { en: "Location", zh: "城市" },
+      summary: { en: "Summary", zh: "个人简介" },
+      work: { en: "Work Experience", zh: "工作经历" },
+      education: { en: "Education", zh: "教育经历" },
+      projects: { en: "Projects", zh: "项目经历" },
+      skills: { en: "Skills", zh: "技能" },
+      featuredSkills: { en: "Featured Skills", zh: "核心技能" },
+      details: { en: "Details", zh: "补充说明" },
+      custom: { en: "Other", zh: "其他" },
+      gpa: { en: "GPA", zh: "绩点" },
+      date: { en: "Date", zh: "时间" },
     };
     return translations[key]?.[language] || key;
   };
@@ -71,7 +74,8 @@ const ResumeControlBar = ({
 
   const generateMarkdown = () => {
     const lines: string[] = [];
-    const { profile, workExperiences, educations, projects, skills, custom } = resume;
+    const { profile, workExperiences, educations, projects, skills, custom } =
+      resume;
 
     if (profile?.name) lines.push(`# ${profile.name}`);
 
@@ -79,48 +83,75 @@ const ResumeControlBar = ({
     if (profile?.email) contact.push(`- ${tMd("email")}: ${profile.email}`);
     if (profile?.phone) contact.push(`- ${tMd("phone")}: ${profile.phone}`);
     if (profile?.url) contact.push(`- ${tMd("website")}: ${profile.url}`);
-    if (profile?.location) contact.push(`- ${tMd("location")}: ${profile.location}`);
-    if (settingsState.showProfileContact && contact.length)
+    if (profile?.location) {
+      contact.push(`- ${tMd("location")}: ${profile.location}`);
+    }
+    if (settingsState.showProfileContact && contact.length) {
       lines.push("", `## ${tMd("contact")}`, ...contact);
+    }
 
     if (settingsState.showProfileSummary && profile?.summary?.length) {
       lines.push("", `## ${tMd("summary")}`);
       profile.summary.forEach((s) => s && lines.push(`- ${s}`));
     }
 
-    // 与 PDF 一致：按 settings.formsOrder 顺序输出可见且有内容的板块
     const { formsOrder, formToShow, formToHeading } = settingsState;
+    const perResumeHeadings = (resume as any).formHeadings as
+      | Record<string, string>
+      | undefined;
+
     const hasContent: Record<ShowForm, boolean> = {
       workExperiences:
         (workExperiences?.length || 0) > 0 &&
         workExperiences.some(
-          (exp) => exp.company || exp.jobTitle || exp.date || (exp.descriptions && exp.descriptions.length > 0),
+          (exp) =>
+            exp.company ||
+            exp.jobTitle ||
+            exp.date ||
+            (exp.descriptions && exp.descriptions.length > 0),
         ),
       educations:
         (educations?.length || 0) > 0 &&
         educations.some(
-          (edu) => edu.school || edu.degree || edu.date || edu.gpa || (edu.descriptions && edu.descriptions.length > 0),
+          (edu) =>
+            edu.school ||
+            edu.degree ||
+            edu.date ||
+            edu.gpa ||
+            (edu.descriptions && edu.descriptions.length > 0),
         ),
       projects:
         (projects?.length || 0) > 0 &&
-        projects.some((proj) => proj.project || proj.date || (proj.descriptions && proj.descriptions.length > 0)),
+        projects.some(
+          (proj) =>
+            proj.project ||
+            proj.date ||
+            (proj.descriptions && proj.descriptions.length > 0),
+        ),
       skills:
-        (skills?.featuredSkills?.some((s) => s.skill) || false) || (skills?.descriptions && skills.descriptions.length > 0) || false,
-      custom: custom?.descriptions && custom.descriptions.length > 0 || false,
+        (skills?.featuredSkills?.some((s) => s.skill) || false) ||
+        (skills?.descriptions && skills.descriptions.length > 0) ||
+        false,
+      custom: (custom?.descriptions && custom.descriptions.length > 0) || false,
     } as Record<ShowForm, boolean>;
 
-    const orderedForms = formsOrder.filter((f) => formToShow[f] && hasContent[f]);
+    const orderedForms = formsOrder.filter(
+      (f) => formToShow[f] && hasContent[f],
+    );
     orderedForms.forEach((form) => {
-      const headingLabel = formToHeading[form];
+      const headingLabel =
+        (perResumeHeadings && perResumeHeadings[form]) || formToHeading[form];
       lines.push("", `## ${headingLabel}`);
       switch (form) {
         case "workExperiences":
-          workExperiences.forEach(({ company, jobTitle, date, descriptions }) => {
-            const titleLine = [jobTitle, company].filter(Boolean).join(", ");
-            if (titleLine) lines.push(`### ${titleLine}`);
-            if (date) lines.push(`_${tMd("date")}: ${date}_`);
-            descriptions?.forEach((d) => d && lines.push(`- ${d}`));
-          });
+          workExperiences.forEach(
+            ({ company, jobTitle, date, descriptions }) => {
+              const titleLine = [jobTitle, company].filter(Boolean).join(", ");
+              if (titleLine) lines.push(`### ${titleLine}`);
+              if (date) lines.push(`_${tMd("date")}: ${date}_`);
+              descriptions?.forEach((d) => d && lines.push(`- ${d}`));
+            },
+          );
           break;
         case "projects":
           projects.forEach(({ project, date, descriptions }) => {
@@ -130,23 +161,29 @@ const ResumeControlBar = ({
           });
           break;
         case "educations":
-          educations.forEach(({ school, degree, date, gpa, descriptions }) => {
-            const titleLine = [degree, school].filter(Boolean).join(", ");
-            if (titleLine) lines.push(`### ${titleLine}`);
-            const meta: string[] = [];
-            if (date) meta.push(`${tMd("date")}: ${date}`);
-            if (gpa) meta.push(`${tMd("gpa")}: ${gpa}`);
-            if (meta.length) lines.push(`_${meta.join(" | ")}_`);
-            descriptions?.forEach((d) => d && lines.push(`- ${d}`));
-          });
+          educations.forEach(
+            ({ school, degree, date, gpa, descriptions }) => {
+              const titleLine = [degree, school].filter(Boolean).join(", ");
+              if (titleLine) lines.push(`### ${titleLine}`);
+              const meta: string[] = [];
+              if (date) meta.push(`${tMd("date")}: ${date}`);
+              if (gpa) meta.push(`${tMd("gpa")}: ${gpa}`);
+              if (meta.length) lines.push(`_${meta.join(" | ")}_`);
+              descriptions?.forEach((d) => d && lines.push(`- ${d}`));
+            },
+          );
           break;
         case "skills": {
           if (skills.featuredSkills?.length) {
             const featured = skills.featuredSkills
               .filter((s) => s.skill)
-              .map((s) => (s.rating ? `${s.skill} (${s.rating}/5)` : `${s.skill}`))
+              .map((s) =>
+                s.rating ? `${s.skill} (${s.rating}/5)` : `${s.skill}`,
+              )
               .join(", ");
-            if (featured) lines.push(`- ${tMd("featuredSkills")}: ${featured}`);
+            if (featured) {
+              lines.push(`- ${tMd("featuredSkills")}: ${featured}`);
+            }
           }
           skills.descriptions?.forEach((d) => d && lines.push(`- ${d}`));
           break;
@@ -219,7 +256,10 @@ const ResumeControlBar = ({
   );
 };
 
-export const ResumeControlBarCSR = dynamic(() => Promise.resolve(ResumeControlBar), { ssr: false });
+export const ResumeControlBarCSR = dynamic(
+  () => Promise.resolve(ResumeControlBar),
+  { ssr: false },
+);
 
 export const ResumeControlBarBorder = () => (
   <div className="absolute bottom-[var(--resume-control-bar-height)] w-full border-t-2 bg-gray-50" />

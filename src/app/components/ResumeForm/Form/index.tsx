@@ -6,10 +6,8 @@ import {
 } from "components/ResumeForm/Form/IconButton";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
 import {
-  changeFormHeading,
   changeFormOrder,
   changeShowForm,
-  selectHeadingByForm,
   selectIsFirstForm,
   selectIsLastForm,
   selectShowByForm,
@@ -27,6 +25,7 @@ import {
   addSectionInForm,
   deleteSectionInFormByIdx,
   moveSectionInForm,
+  changeFormHeadingForResume,
 } from "lib/redux/resumeManagerSlice";
 
 export const BaseForm = ({
@@ -63,7 +62,23 @@ export const Form = ({
   resumeId?: string;
 }) => {
   const showForm = useAppSelector(selectShowByForm(form));
-  const heading = useAppSelector(selectHeadingByForm(form));
+  const heading = useAppSelector((state) => {
+    // Prefer per-resume heading; fall back to global settings
+    // so that existing resumes still work.
+    const targetId = resumeId ?? state.resumeManager.currentResumeId;
+    const currentResume = state.resumeManager.resumes.find(
+      (r) => r.metadata.id === targetId,
+    );
+    const resumeHeadings = currentResume?.content.formHeadings as
+      | Record<string, string>
+      | undefined;
+
+    if (resumeHeadings && typeof resumeHeadings[form] === "string") {
+      return resumeHeadings[form] as string;
+    }
+
+    return state.settings.formToHeading[form];
+  });
 
   const dispatch = useAppDispatch();
   const setShowForm = (showForm: boolean) => {
@@ -71,10 +86,10 @@ export const Form = ({
   };
   const setHeading = (heading: string) => {
     dispatch(
-      changeFormHeading({
-        field: form,
-        value: heading,
-        isUserCustomized: true,
+      changeFormHeadingForResume({
+        resumeId,
+        form,
+        heading,
       }),
     );
   };

@@ -399,6 +399,31 @@ export const resumeManagerSlice = createSlice({
         currentResume.metadata.updatedAt = new Date().toISOString();
       }
     },
+
+    // Per-resume section heading update so that different resumes
+    // (for example Chinese / English versions) can have independent
+    // section titles without affecting others.
+    changeFormHeadingForResume: (
+      state,
+      action: PayloadAction<{
+        resumeId?: string;
+        form: ShowForm;
+        heading: string;
+      }>,
+    ) => {
+      const targetId = action.payload.resumeId ?? state.currentResumeId;
+      if (!targetId) return;
+      const currentResume = state.resumes.find((r) => r.metadata.id === targetId);
+      if (!currentResume) return;
+
+      if (!currentResume.content.formHeadings) {
+        currentResume.content.formHeadings = {};
+      }
+
+      currentResume.content.formHeadings[action.payload.form] =
+        action.payload.heading;
+      currentResume.metadata.updatedAt = new Date().toISOString();
+    },
   },
 });
 
@@ -422,6 +447,7 @@ export const {
   moveSectionInForm,
   deleteSectionInFormByIdx,
   setResume,
+  changeFormHeadingForResume,
 } = resumeManagerSlice.actions;
 
 export const selectAllResumes = (state: RootState) =>

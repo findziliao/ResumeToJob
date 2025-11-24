@@ -55,6 +55,11 @@ export interface Resume {
   projects: ResumeProject[];
   skills: ResumeSkills;
   custom: ResumeCustom;
+  // Optional per-resume section headings, e.g. to allow
+  // Chinese and English resumes to have different titles.
+  // Keys follow the same naming as form sections:
+  // workExperiences, educations, projects, skills, custom.
+  formHeadings?: Record<string, string>;
 }
 
 export type ResumeKey = keyof Resume;

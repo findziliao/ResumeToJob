@@ -4,7 +4,7 @@ import type { Settings, ShowForm } from "lib/redux/settingsSlice";
 export const generateMarkdown = (
   resume: Resume,
   settings: Settings,
-  language: string
+  language: string,
 ): string => {
   const lines: string[] = [];
   const { profile, workExperiences, educations, projects, skills, custom } =
@@ -37,17 +37,24 @@ export const generateMarkdown = (
   if (profile?.email) contact.push(`- ${tMd("email")}: ${profile.email}`);
   if (profile?.phone) contact.push(`- ${tMd("phone")}: ${profile.phone}`);
   if (profile?.url) contact.push(`- ${tMd("website")}: ${profile.url}`);
-  if (profile?.location) contact.push(`- ${tMd("location")}: ${profile.location}`);
-  if (settings.showProfileContact && contact.length)
+  if (profile?.location) {
+    contact.push(`- ${tMd("location")}: ${profile.location}`);
+  }
+  if (settings.showProfileContact && contact.length) {
     lines.push("", `## ${tMd("contact")}`, ...contact);
+  }
 
   if (settings.showProfileSummary && profile?.summary?.length) {
     lines.push("", `## ${tMd("summary")}`);
     profile.summary.forEach((s) => s && lines.push(`- ${s}`));
   }
 
-  // 与 PDF 一致：按 settings.formsOrder 顺序输出可见且有内容的板块
   const { formsOrder, formToShow, formToHeading } = settings;
+  // If this resume has its own headings, prefer those over global settings
+  const perResumeHeadings = (resume as any).formHeadings as
+    | Record<string, string>
+    | undefined;
+
   const hasContent: Record<ShowForm, boolean> = {
     workExperiences:
       (workExperiences?.length || 0) > 0 &&
@@ -56,7 +63,7 @@ export const generateMarkdown = (
           exp.company ||
           exp.jobTitle ||
           exp.date ||
-          (exp.descriptions && exp.descriptions.length > 0)
+          (exp.descriptions && exp.descriptions.length > 0),
       ),
     educations:
       (educations?.length || 0) > 0 &&
@@ -66,7 +73,7 @@ export const generateMarkdown = (
           edu.degree ||
           edu.date ||
           edu.gpa ||
-          (edu.descriptions && edu.descriptions.length > 0)
+          (edu.descriptions && edu.descriptions.length > 0),
       ),
     projects:
       (projects?.length || 0) > 0 &&
@@ -74,7 +81,7 @@ export const generateMarkdown = (
         (proj) =>
           proj.project ||
           proj.date ||
-          (proj.descriptions && proj.descriptions.length > 0)
+          (proj.descriptions && proj.descriptions.length > 0),
       ),
     skills:
       (skills?.featuredSkills?.some((s) => s.skill) || false) ||
@@ -85,7 +92,8 @@ export const generateMarkdown = (
 
   const orderedForms = formsOrder.filter((f) => formToShow[f] && hasContent[f]);
   orderedForms.forEach((form) => {
-    const headingLabel = formToHeading[form];
+    const headingLabel =
+      (perResumeHeadings && perResumeHeadings[form]) || formToHeading[form];
     lines.push("", `## ${headingLabel}`);
     switch (form) {
       case "workExperiences":
@@ -119,7 +127,7 @@ export const generateMarkdown = (
           const featured = skills.featuredSkills
             .filter((s) => s.skill)
             .map((s) =>
-              s.rating ? `${s.skill} (${s.rating}/5)` : `${s.skill}`
+              s.rating ? `${s.skill} (${s.rating}/5)` : `${s.skill}`,
             )
             .join(", ");
           if (featured) lines.push(`- ${tMd("featuredSkills")}: ${featured}`);
@@ -136,3 +144,4 @@ export const generateMarkdown = (
   lines.push("", "\n");
   return lines.join("\n");
 };
+

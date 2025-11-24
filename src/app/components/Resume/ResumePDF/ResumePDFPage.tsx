@@ -26,12 +26,15 @@ export const ResumePDFPage = ({
         fontFamily,
         fontSize,
         documentSize,
-        formToHeading,
         formToShow,
         formsOrder,
         template,
     } = settings;
     const themeColor = settings.themeColor || DEFAULT_FONT_COLOR;
+
+    // Prefer per-resume section headings; fall back to global settings
+    const formToHeading =
+        (resume as any).formHeadings || settings.formToHeading;
 
     const hasContent = {
         workExperiences:
